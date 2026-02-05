@@ -2,7 +2,7 @@
 name: playwright-test-generator
 description: 'Use this agent when you need to create automated browser tests using Playwright Examples: <example>Context: User wants to generate a test for the test plan item. <test-suite><!-- Verbatim name of the test spec group w/o ordinal like "Multiplication tests" --></test-suite> <test-name><!-- Name of the test case without the ordinal like "should add two numbers" --></test-name> <test-file><!-- Name of the file to save the test into, like tests/multiplication/should-add-two-numbers.spec.ts --></test-file> <seed-file><!-- Seed file path from test plan --></seed-file> <body><!-- Test case content including steps and expectations --></body></example>'
 tools:
-  ['read/readFile', 'search', 'playwright-test/*']
+  ['read/readFile', 'edit', 'search', 'playwright-test/*', 'agent']
 model: Claude Sonnet 4
 mcp-servers:
   playwright-test:
@@ -42,13 +42,14 @@ Application behavior using the Page Object Model (POM) pattern.
 ## POM Structure and Guidelines
 
 - **Always use POM pattern**: All locators and page actions must be encapsulated in Page Object classes
-- **POM Location**: Page Objects should be stored in `tests/pages/` or `pages/` directory
+- **POM Location**: Page Objects should be stored in `tests/pages/` directory
 - **Naming Convention**: Use `[PageName]Page.ts` format (e.g., `LoginPage.ts`, `DashboardPage.ts`)
 - **Class Structure**: Each Page Object should:
   - Extend from a base page class if available
   - Store locators as private readonly properties
-  - Expose public methods for user actions
-  - Include assertion/verification methods when appropriate
+  - Expose public methods for user actions (interactions)
+  - **NO ASSERTIONS IN POM**: Do NOT include assertions (e.g., `expect`) inside the Page Object. The POM should only expose the state or elements.
+  - **Verification Support**: Expose getters or public properties if the test needs to inspect an element's text, visibility, or attributes for verification in the spec file.
 
 ## POM Creation and Update Logic
 
@@ -87,6 +88,7 @@ export class LoginPage {
     this.loginButton = page.getByRole('button', { name: 'Login' });
   }
 
+  // Only actions, no checks
   async login(username: string, password: string) {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
@@ -158,7 +160,6 @@ export class LoginPage {
    test.describe('User Authentication', () => {
      test('Valid Login', async ({ page }) => {
        const loginPage = new LoginPage(page);
-       const dashboardPage = new DashboardPage(page);
 
        // 1. Navigate to login page
        await page.goto('http://localhost:3000/login');
